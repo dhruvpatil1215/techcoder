@@ -1,23 +1,23 @@
 export default async function handler(req, res) {
   const { id } = req.query;
-
-  const targetUrl = `https://livetvbox.live/live/Gareth/Gareth123/${id}.ts`;
+  const sourceUrl = `https://livetvbox.live/live/Gareth/Gareth123/${id}.ts`;
 
   try {
-    const stream = await fetch(targetUrl, {
+    const response = await fetch(sourceUrl, {
       headers: {
         'User-Agent': 'VLC/3.0.16',
-        'Referer': 'https://livetvbox.live/',
+        'Referer': 'https://livetvbox.live/'
       }
     });
 
-    if (!stream.ok) {
-      return res.status(stream.status).send(`Error: ${stream.statusText}`);
+    if (!response.ok) {
+      return res.status(response.status).send(`Upstream error: ${response.statusText}`);
     }
 
-    res.setHeader('Content-Type', 'video/MP2T');
-    stream.body.pipe(res);
-  } catch (e) {
-    res.status(500).send('Proxy error');
+    res.setHeader('Content-Type', 'video/mp2t');
+    return response.body.pipe(res);
+  } catch (err) {
+    console.error('Fetch error:', err);
+    return res.status(500).send('Proxy error');
   }
 }
