@@ -1,23 +1,23 @@
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const id = url.pathname.split("/").pop().replace(".m3u8", "").replace(".ts", "");
+export default async function handler(req, res) {
+  const { id } = req.query;
 
-    const target = `https://livetvbox.live/live/Gareth/Gareth123/${id}.ts`;
+  const targetUrl = `https://livetvbox.live/live/Gareth/Gareth123/${id}.ts`;
 
-    const res = await fetch(target, {
+  try {
+    const stream = await fetch(targetUrl, {
       headers: {
-        "User-Agent": "VLC/3.0.16",
-        "Referer": "https://livetvbox.live/",
+        'User-Agent': 'VLC/3.0.16',
+        'Referer': 'https://livetvbox.live/',
       }
     });
 
-    return new Response(res.body, {
-      status: res.status,
-      headers: {
-        "Content-Type": "video/MP2T",
-        "Cache-Control": "no-store"
-      }
-    });
+    if (!stream.ok) {
+      return res.status(stream.status).send(`Error: ${stream.statusText}`);
+    }
+
+    res.setHeader('Content-Type', 'video/MP2T');
+    stream.body.pipe(res);
+  } catch (e) {
+    res.status(500).send('Proxy error');
   }
-};
+}
