@@ -1,16 +1,23 @@
 export default async function handler(req, res) {
   const { id } = req.query;
+  const sourceUrl = `https://livetvbox.live/live/Gareth/Gareth123/${id}.ts`;
 
-  const base = `https://${req.headers.host}/api/ts/${id}`;
+  try {
+    const response = await fetch(sourceUrl, {
+      headers: {
+        'User-Agent': 'VLC/3.0.16',
+        'Referer': 'https://livetvbox.live/'
+      }
+    });
 
-  const m3u8 = `#EXTM3U
-#EXT-X-VERSION:3
-#EXT-X-TARGETDURATION:10
-#EXT-X-MEDIA-SEQUENCE:0
-#EXTINF:10.0,
-${base}
-#EXT-X-ENDLIST`;
+    if (!response.ok) {
+      return res.status(response.status).send(`Upstream error: ${response.statusText}`);
+    }
 
-  res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-  res.send(m3u8);
+    res.setHeader('Content-Type', 'video/mp2t');
+    return response.body.pipe(res);
+  } catch (err) {
+    console.error('Fetch error:', err);
+    return res.status(500).send('Proxy error');
+  }
 }
